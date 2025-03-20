@@ -1,0 +1,7 @@
+django==4.2.7
+djangorestframework==3.14.0
+django-cors-headers==4.2.0
+groq==0.15.0
+pdfplumber==0.10.2
+python-dotenv==1.0.0
+python-magic==0.4.27
