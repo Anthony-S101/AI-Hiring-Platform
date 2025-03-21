@@ -1,6 +1,6 @@
 // Dashboard.jsx
 import React, { useState, useEffect, useRef, memo } from 'react';
-import { Upload, LoaderCircle, CheckCircle, FileText, Send, User, Bot } from 'lucide-react';
+import { Upload, LoaderCircle, CheckCircle, FileText, Send, User, Bot, Mic, MicOff } from 'lucide-react';
 import AceEditor from 'react-ace';
 import { motion } from 'framer-motion';
 import Timer from './Timer';
@@ -28,6 +28,8 @@ const Dashboard = () => {
   const [step, setStep] = useState("qa");
   // AI typing indicator state
   const [aiTyping, setAiTyping] = useState(false);
+  // Voice recording state
+  const [isRecording, setIsRecording] = useState(false);
 
   // Coding Round state
   const codingQuestions = [
@@ -213,6 +215,34 @@ const Dashboard = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Voice recognition handler using Web Speech API
+  const handleVoiceInput = () => {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      setError("Voice recognition is not supported in your browser.");
+      return;
+    }
+    const recognition = new SpeechRecognition();
+    recognition.lang = "en-US";
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+    recognition.onstart = () => {
+      setIsRecording(true);
+    };
+    recognition.onresult = (event) => {
+      const transcript = event.results[0][0].transcript;
+      setUserInput(transcript);
+    };
+    recognition.onerror = (event) => {
+      setError("Voice recognition error: " + event.error);
+      setIsRecording(false);
+    };
+    recognition.onend = () => {
+      setIsRecording(false);
+    };
+    recognition.start();
   };
 
   // Transition from Q&A to Coding: set step to "transition" so a transitional screen is shown.
@@ -463,7 +493,7 @@ const Dashboard = () => {
             disabled={loading}
             className="px-8 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium transition-all transform hover:scale-105 disabled:opacity-50"
           >
-            {loading ? <LoaderCircle className="animate-spin h-5 w-5" /> : `Submit`}
+            {loading ? <LoaderCircle className="animate-spin h-5 w-5" /> : 'Submit'}
           </button>
         ) : (
           <button
@@ -492,33 +522,10 @@ const Dashboard = () => {
       <div className="text-center p-10">
         <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />
         <h2 className="text-2xl font-bold mb-4">Thank you for completing the test!</h2>
-        <div className="mb-4">
-          {/* <p className="text-lg text-gray-800">Your Final Coding Feedback:</p>
-          <p className="text-gray-700 whitespace-pre-line">{combinedFeedback}</p>
-          <p className="text-gray-700">Average Rating: {averageRating} / 10</p> */}
-        </div>
         <p className="text-gray-600">Our HR team will get back to you shortly.</p>
       </div>
     );
   };
-
-  // const aggregateCodingFeedback = () => {
-  //   let totalRating = 0;
-  //   const count = codingQuestions.length;
-  //   let combinedFeedback = "";
-  //   codingFeedbacks.forEach((fb, idx) => {
-  //     const rating = fb && fb.rating ? fb.rating : 0;
-  //     totalRating += rating;
-  //     const feedbackText = fb && fb.feedback ? fb.feedback : `No feedback for Question ${idx + 1}.`;
-  //     combinedFeedback += `Question ${idx + 1}: ${feedbackText}\n`;
-  //   });
-  //   return { averageRating: (totalRating / count).toFixed(1), combinedFeedback };
-  // };
-
-  // const fadeIn = {
-  //   hidden: { opacity: 0, y: 20 },
-  //   visible: { opacity: 1, y: 0, transition: { duration: 0.3 } },
-  // };
 
   return (
     <div className="min-h-screen w-full bg-gray-50">
@@ -559,6 +566,12 @@ const Dashboard = () => {
                   className="flex-1 px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg"
                   onKeyPress={(e) => e.key === 'Enter' && submitAnswer()}
                 />
+                <button onClick={handleVoiceInput} className="ml-2">
+                  {isRecording ? <MicOff className="h-6 w-6 text-red-500" /> : <Mic className="h-6 w-6 text-blue-500" />}
+                </button>
+                <button onClick={submitAnswer} className="ml-2">
+                  <Send className="h-6 w-6 text-blue-500" />
+                </button>
               </div>
             </div>
           ) : step === "transition" ? (
